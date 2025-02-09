@@ -1,4 +1,12 @@
-from flask import Flask, render_template
+import os
+from flask import Flask
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("EMAIL_PASS")
 
 app = Flask(__name__)
 
