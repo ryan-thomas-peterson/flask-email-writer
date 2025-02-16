@@ -10,10 +10,18 @@
             font-family: Arial, sans-serif;
             margin: 20px;
             text-align: center;
+            background-image: url('https://www.archives.gov/files/exhibits/american_originals/declaration_big.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            color: #2c2c2c;
         }
         .container {
             max-width: 600px;
             margin: auto;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
         }
         textarea, input {
             width: 100%;
@@ -34,12 +42,17 @@
         button:hover {
             background-color: #0056b3;
         }
+        .flex-container {
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Email Generator</h2>
         
+        <input type="text" id="topic-prompt" placeholder="Prompt for topic">
         <button id="generate-topic">Generate Topic</button>
         <textarea id="topic" rows="2" placeholder="Email Topic"></textarea>
         
@@ -49,15 +62,21 @@
         <input type="text" id="prompt-input" placeholder="Enter prompt for email refinement">
         <button id="refine-content">Refine Content</button>
         
+        <div class="flex-container">
+            <input type="text" id="recipient-email" placeholder="Recipient Email">
+            <button id="suggest-contact">Suggest Contact</button>
+        </div>
+        
         <button id="send-email">Send Email</button>
     </div>
 
     <script>
         $(document).ready(function() {
             $('#generate-topic').click(function() {
-                $.post('/generate-topic', function(data) {
+                const topicPrompt = $('#topic-prompt').val();
+                $.post('/generate-topic', JSON.stringify({ prompt: topicPrompt }), function(data) {
                     $('#topic').val(data.topic);
-                });
+                }, "json");
             });
 
             $('#generate-content').click(function() {
@@ -77,9 +96,18 @@
                 }, "json");
             });
 
+            $('#suggest-contact').click(function() {
+                const topic = $('#topic').val();
+                const content = $('#email-content').val();
+                
+                $.post('/suggest-contact', JSON.stringify({ topic: topic, content: content }), function(data) {
+                    $('#recipient-email').val(data.contact);
+                }, "json");
+            });
+
             $('#send-email').click(function() {
-                const to_email = prompt("Enter recipient email:");
-                if (!to_email) return;
+                const to_email = $('#recipient-email').val();
+                if (!to_email) return alert("Please enter a recipient email");
                 const subject = $('#topic').val();
                 const body = $('#email-content').val();
                 
@@ -91,3 +119,4 @@
     </script>
 </body>
 </html>
+
