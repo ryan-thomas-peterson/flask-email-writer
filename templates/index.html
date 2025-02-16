@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Generator</title>
+    <script>
+        async function generateTopic() {
+            let response = await fetch("/generate-topic", { method: "POST" });
+            let data = await response.json();
+            document.getElementById("topic").innerText = data.topic;
+        }
+
+        async function generateEmail() {
+            let topic = document.getElementById("topic").innerText;
+            if (!topic) {
+                alert("Please generate a topic first.");
+                return;
+            }
+            let response = await fetch("/generate-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ topic: topic })
+            });
+            let data = await response.json();
+            document.getElementById("email-content").innerText = data.content;
+        }
+
+        async function sendEmail() {
+            let toEmail = document.getElementById("to-email").value;
+            let subject = document.getElementById("topic").innerText;
+            let body = document.getElementById("email-content").innerText;
+
+            if (!toEmail || !subject || !body) {
+                alert("Please complete all fields before sending.");
+                return;
+            }
+
+            let response = await fetch("/send-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ to_email: toEmail, subject: subject, body: body })
+            });
+
+            let data = await response.json();
+            alert(data.message);
+        }
+    </script>
+</head>
+<body>
+    <h1>Email Generator</h1>
+    <button onclick="generateTopic()">Generate Topic</button>
+    <p><strong>Topic:</strong> <span id="topic"></span></p>
+
+    <button onclick="generateEmail()">Generate Email</button>
+    <p><strong>Email Content:</strong></p>
+    <p id="email-content"></p>
+
+    <label for="to-email">Recipient Email:</label>
+    <input type="email" id="to-email" placeholder="Enter recipient email">
+
+    <button onclick="sendEmail()">Send Email</button>
+</body>
+</html>
