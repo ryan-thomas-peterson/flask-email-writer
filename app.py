@@ -15,27 +15,27 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("Missing OpenAI API Key! Set OPENAI_API_KEY in environment variables.")
 
-openai.api_key = OPENAI_API_KEY
+openai_client = openai.Client(api_key=OPENAI_API_KEY)
 
 app = Flask(__name__)
 
 # Function to generate an email topic using OpenAI
 def generate_topic():
     prompt = "Generate a professional email topic on a general business-related theme."
-    response = openai.ChatCompletion.create(
+    response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": prompt}]
     )
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
 
 # Function to generate email content using OpenAI
 def generate_email_content(topic):
     prompt = f"Write a professional email based on the following topic: {topic}"
-    response = openai.ChatCompletion.create(
+    response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": prompt}]
     )
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
 
 # Function to send an email
 def send_email(to_email, subject, body):
