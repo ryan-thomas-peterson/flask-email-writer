@@ -4,61 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Generator</title>
-    <script>
-        async function generateTopic() {
-            let response = await fetch("/generate-topic", { method: "POST" });
-            let data = await response.json();
-            document.getElementById("topic").innerText = data.topic;
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
         }
-
-        async function generateEmail() {
-            let topic = document.getElementById("topic").innerText;
-            if (!topic) {
-                alert("Please generate a topic first.");
-                return;
-            }
-            let response = await fetch("/generate-email", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ topic: topic })
-            });
-            let data = await response.json();
-            document.getElementById("email-content").innerText = data.content;
+        .container {
+            max-width: 600px;
+            margin: auto;
         }
-
-        async function sendEmail() {
-            let toEmail = document.getElementById("to-email").value;
-            let subject = document.getElementById("topic").innerText;
-            let body = document.getElementById("email-content").innerText;
-
-            if (!toEmail || !subject || !body) {
-                alert("Please complete all fields before sending.");
-                return;
-            }
-
-            let response = await fetch("/send-email", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ to_email: toEmail, subject: subject, body: body })
-            });
-
-            let data = await response.json();
-            alert(data.message);
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
-    </script>
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <h1>Email Generator</h1>
-    <button onclick="generateTopic()">Generate Topic</button>
-    <p><strong>Topic:</strong> <span id="topic"></span></p>
+    <div class="container">
+        <h2>Email Generator</h2>
+        
+        <button id="generate-topic">Generate Topic</button>
+        <textarea id="topic" rows="2" placeholder="Email Topic"></textarea>
+        
+        <button id="generate-content">Generate Email Content</button>
+        <textarea id="email-content" rows="6" placeholder="Generated Email Content"></textarea>
+        
+        <input type="text" id="prompt-input" placeholder="Enter prompt for email refinement">
+        <button id="refine-content">Refine Content</button>
+        
+        <button id="send-email">Send Email</button>
+    </div>
 
-    <button onclick="generateEmail()">Generate Email</button>
-    <p><strong>Email Content:</strong></p>
-    <p id="email-content"></p>
+    <script>
+        $(document).ready(function() {
+            $('#generate-topic').click(function() {
+                $.post('/generate-topic', function(data) {
+                    $('#topic').val(data.topic);
+                });
+            });
 
-    <label for="to-email">Recipient Email:</label>
-    <input type="email" id="to-email" placeholder="Enter recipient email">
+            $('#generate-content').click(function() {
+                const topic = $('#topic').val();
+                $.post('/generate-email', JSON.stringify({ topic: topic }), function(data) {
+                    $('#email-content').val(data.content);
+                }, "json");
+            });
 
-    <button onclick="sendEmail()">Send Email</button>
+            $('#refine-content').click(function() {
+                const topic = $('#topic').val();
+                const prompt = $('#prompt-input').val();
+                const content = $('#email-content').val();
+                
+                $.post('/generate-email', JSON.stringify({ topic: topic, prompt: prompt, content: content }), function(data) {
+                    $('#email-content').val(data.content);
+                }, "json");
+            });
+
+            $('#send-email').click(function() {
+                const to_email = prompt("Enter recipient email:");
+                if (!to_email) return;
+                const subject = $('#topic').val();
+                const body = $('#email-content').val();
+                
+                $.post('/send-email', JSON.stringify({ to_email: to_email, subject: subject, body: body }), function(data) {
+                    alert(data.message);
+                }, "json");
+            });
+        });
+    </script>
 </body>
 </html>
