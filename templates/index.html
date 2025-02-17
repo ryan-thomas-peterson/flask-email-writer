@@ -73,27 +73,6 @@
     </div>
 
     <script>
-		Great! Now that the site renders, let’s debug why the buttons aren’t updating the form fields.
-
-🔍 Possible Causes & Fixes
-1️⃣ JavaScript Errors Prevent Execution
-If there’s a syntax error in JavaScript, it stops all scripts from running.
-
-✅ Check the Browser Console for Errors:
-
-Right-click on the webpage → Click Inspect.
-Go to the Console tab.
-Look for red error messages.
-👉 If you see an error, let me know what it says!
-
-2️⃣ JavaScript Is Not Properly Fetching the Backend
-Make sure your JavaScript sends the correct API requests and handles responses correctly.
-
-✅ Fix: Update JavaScript Code in index.html Replace the existing <script> section with this fixed version:
-
-javascript
-Copy
-Edit
 document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("suggest-contact-button").addEventListener("click", function () {
         const topic = document.getElementById("topic").value;
