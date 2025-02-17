@@ -99,8 +99,8 @@ def send_email():
     if not to_email or not subject or not body:
         return jsonify({"message": "Missing email fields"}), 400
     
-    from_email = os.getenv("EMAIL_ADDRESS")
-    app_password = os.getenv("EMAIL_APP_PASSWORD")
+    from_email = os.getenv("EMAIL_USER")
+    app_password = os.getenv("EMAIL_PASS")
     
     if not from_email or not app_password:
         return jsonify({"message": "Email credentials not configured properly"}), 500
