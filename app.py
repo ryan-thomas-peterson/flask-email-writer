@@ -23,17 +23,19 @@ def home():
     return render_template("index.html")
     
 # Function to generate a topic
+# Function to generate a topic
 @app.route('/generate-topic', methods=['POST'])
 def generate_topic():
     data = request.get_json()
-    category = data.get("prompt", "general political issues")  # Fixed: Now correctly gets prompt input
-    prompt = f"Generate an impactful email topic about current frustrations with the US government around {category}."  # Fixed f-string formatting
+    category = data.get("prompt", "general political issues")
+    prompt = f"Generate an impactful email topic about current frustrations with the US government around {category}."
     
     response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": prompt}]
+        messages=[{"role": "system", "content": "You are a helpful assistant generating email topics."},
+                  {"role": "user", "content": prompt}]
     )
-    topic = response["choices"][0]["message"]["content"]
+    topic = response.choices[0].message.content
     return jsonify({"topic": topic})
 
 # Function to generate email content
@@ -44,7 +46,7 @@ def generate_email():
     prompt = data.get("prompt", "")
     current_content = data.get("content", "")
     
-    email_prompt = f"Write a professional, impactful email directed at leaders and decision makers about US government and corporations frustrations around: {topic}.  The message should include references to founding documents, provide well reasoned logic about why current actions are wrong and damaging to society as awhole"
+    email_prompt = f"Write a professional, impactful email directed at leaders and decision makers about US government and corporate frustrations around: {topic}. The message should include references to founding documents, provide well-reasoned logic about why current actions are wrong and damaging to society as a whole."
     if prompt:
         email_prompt += f" Consider the following user input: {prompt}."
     if current_content:
@@ -54,9 +56,10 @@ def generate_email():
     
     response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": email_prompt}]
+        messages=[{"role": "system", "content": "You are a helpful assistant generating email content."},
+                  {"role": "user", "content": email_prompt}]
     )
-    content = response["choices"][0]["message"]["content"]
+    content = response.choices[0].message.content
     return jsonify({"content": content})
 
 # Function to suggest a contact
@@ -67,16 +70,14 @@ def suggest_contact():
     content = data.get("content", "")
     
     contact_prompt = f"Based on the following email topic: '{topic}' and content: '{content}', suggest the most relevant recipient who would have the most impact. Provide the contact's email address and a brief reason why they are the best choice in the format: 'Email: example@email.com Reason: They are a key decision-maker in this field.'"
-
+    
     response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "systme", "content": contact_prompt}]
+        messages=[{"role": "system", "content": "You are a helpful assistant suggesting impactful email recipients."},
+                  {"role": "user", "content": contact_prompt}]
     )
-
-    # Extract response content
-    contact_response = response["choices"][0]["message"]["content"]
-
-    # Parsing email and reason from response
+    
+    contact_response = response.choices[0].message.content
     email = "Unknown"
     reason = "No reason provided."
     
@@ -84,7 +85,7 @@ def suggest_contact():
         parts = contact_response.split("Reason:")
         email = parts[0].replace("Email:", "").strip()
         reason = parts[1].strip()
-
+    
     return jsonify({"email": email, "reason": reason})
 
 # Function to send an email
@@ -100,8 +101,7 @@ def send_email():
     
     from_email = os.getenv("EMAIL_ADDRESS")
     app_password = os.getenv("EMAIL_APP_PASSWORD")
-
-    # Safeguard for missing credentials
+    
     if not from_email or not app_password:
         return jsonify({"message": "Email credentials not configured properly"}), 500
     
@@ -119,5 +119,5 @@ def send_email():
         return jsonify({"message": f"Failed to send email: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    port = int(os.getenv("PORT", 5000))  # Get port from environment, default to 5000 if missing
+    port = int(os.getenv("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
