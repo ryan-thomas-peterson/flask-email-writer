@@ -63,15 +63,39 @@
         <button id="refine-content">Refine Content</button>
         
         <div class="flex-container">
-            <input type="text" id="recipient-email" placeholder="Recipient Email">
-            <button id="suggest-contact">Suggest Contact</button>
+            <label for="recipient-email">Recipient Email:</label>
+			<input type="text" id="recipient-email" placeholder="Suggested recipient email">
+			<button id="suggest-contact-button">Suggest Contact</button>
+			<p id="recipient-reason"></p>
         </div>
         
         <button id="send-email">Send Email</button>
     </div>
 
     <script>
-        $(document).ready(function() {
+			document.getElementById("suggest-contact-button").addEventListener("click", function() {
+			const topic = document.getElementById("topic-display").value;
+			const content = document.getElementById("email-content").value;
+
+			fetch("/suggest-contact", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					topic: topic,
+					content: content
+				})
+			})
+			.then(response => response.json())
+			.then(data => {
+				document.getElementById("recipient-email").value = data.email;  // Update recipient email input
+				document.getElementById("recipient-reason").innerText = data.reason;  // Display reason in text
+			})
+			.catch(error => console.error("Error:", error));
+		});
+
+		$(document).ready(function() {
             $('#generate-topic').click(function() {
                 const topicPrompt = $('#topic-prompt').val();
                 $.post('/generate-topic', JSON.stringify({ prompt: topicPrompt }), function(data) {

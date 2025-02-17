@@ -1,92 +1,108 @@
-import os
-import smtplib
-from email.message import EmailMessage
-from flask import Flask, render_template, request, jsonify
-from dotenv import load_dotenv
+from flask import Flask, request, jsonify, render_template
 import openai
-
-# Load environment variables
-load_dotenv()
-
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASS = os.getenv("EMAIL_PASS")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-if not OPENAI_API_KEY:
-    raise ValueError("Missing OpenAI API Key! Set OPENAI_API_KEY in environment variables.")
-
-openai_client = openai.Client(api_key=OPENAI_API_KEY)
+import smtplib
+import os
+import json
+from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
-# Function to generate an email topic using OpenAI
-def generate_topic():
-    prompt = "Generate a professional email topic on a general business-related theme."
-    response = openai_client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": prompt}]
-    )
-    return response.choices[0].message.content
+# OpenAI API Key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Function to generate email content using OpenAI
-def generate_email_content(topic):
-    prompt = f"Write a professional email based on the following topic: {topic}"
-    response = openai_client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": prompt}]
-    )
-    return response.choices[0].message.content
-
-# Function to send an email
-def send_email(to_email, subject, body):
-    msg = EmailMessage()
-    msg["From"] = EMAIL_USER
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.set_content(body)
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL_USER, EMAIL_PASS)
-            server.send_message(msg)
-        return "Email sent successfully!"
-    except Exception as e:
-        return f"Error sending email: {e}"
-
-# Route to serve the webpage
-@app.route('/')
-def home():
-    return render_template("index.html")
-
-# API route to generate a topic
+# Function to generate a topic
 @app.route('/generate-topic', methods=['POST'])
-def generate_topic_route():
-    topic = generate_topic()
+def generate_topic():
+    data = request.get_json()
+    category = data.get("topic-prompt","Prompt for topic")
+    prompt = data.get("prompt", "Generate an impactful email topic about current frustrations with the US government around {category}.")
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "system", "content": "You are a helpful assistant generating email topics."},
+                  {"role": "user", "content": prompt}]
+    )
+    topic = response["choices"][0]["message"]["content"]
     return jsonify({"topic": topic})
 
-# API route to generate email content based on topic
+# Function to generate email content
 @app.route('/generate-email', methods=['POST'])
-def generate_email_route():
-    data = request.json
+def generate_email():
+    data = request.get_json()
+    topic = data.get("topic", "General Email Topic")
+    prompt = data.get("prompt", "")
+    current_content = data.get("content", "")
+    
+    email_prompt = f"Write a professional, impactful email directed at leaders and decision makers about US government and corporations frustrations around: {topic}.  The message should include references to founding documents, provide well reasoned logic about why current actions are wrong and damaging to society as awhole"
+    if prompt:
+        email_prompt += f" Consider the following user input: {prompt}."
+    if current_content:
+        email_prompt += f" Improve or refine this existing content: {current_content}."
+    
+    email_prompt += " Include the sender's details: Ryan Peterson, 44-year-old married father of two, living in Madison, WI, working as a healthcare analyst."
+    
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "system", "content": "You are a helpful assistant generating email content."},
+                  {"role": "user", "content": email_prompt}]
+    )
+    content = response["choices"][0]["message"]["content"]
+    return jsonify({"content": content})
+
+# Function to suggest a contact
+@app.route('/suggest-contact', methods=['POST'])
+def suggest_contact():
+    data = request.get_json()
     topic = data.get("topic", "")
-    if not topic:
-        return jsonify({"error": "No topic provided"}), 400
-    email_content = generate_email_content(topic)
-    return jsonify({"content": email_content})
+    content = data.get("content", "")
+    
+    contact_prompt = f"Based on the following email topic: '{topic}' and content: '{content}', suggest the most relevant recipient who would have the most impact. Provide the contact's email address and a brief reason why they are the best choice in the format: 'Email: example@email.com Reason: They are a key decision-maker in this field.'"
 
-# API route to send an email
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "system", "content": "You are a helpful assistant suggesting impactful email recipients."},
+                  {"role": "user", "content": contact_prompt}]
+    )
+
+    # Extract response content
+    contact_response = response["choices"][0]["message"]["content"]
+
+    # Parsing email and reason from response
+    email = "Unknown"
+    reason = "No reason provided."
+    
+    if "Email:" in contact_response and "Reason:" in contact_response:
+        parts = contact_response.split("Reason:")
+        email = parts[0].replace("Email:", "").strip()
+        reason = parts[1].strip()
+
+    return jsonify({"email": email, "reason": reason})
+
+# Function to send an email
 @app.route('/send-email', methods=['POST'])
-def send_email_route():
-    data = request.json
-    to_email = data.get("to_email", "")
-    subject = data.get("subject", "")
-    body = data.get("body", "")
-
+def send_email():
+    data = request.get_json()
+    to_email = data.get("to_email")
+    subject = data.get("subject")
+    body = data.get("body")
+    
     if not to_email or not subject or not body:
-        return jsonify({"error": "Missing required fields"}), 400
-
-    result = send_email(to_email, subject, body)
-    return jsonify({"message": result})
+        return jsonify({"message": "Missing email fields"}), 400
+    
+    from_email = os.getenv("EMAIL_ADDRESS")
+    app_password = os.getenv("EMAIL_APP_PASSWORD")
+    
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = from_email
+    msg["To"] = to_email
+    
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(from_email, app_password)
+            server.sendmail(from_email, to_email, msg.as_string())
+        return jsonify({"message": "Email sent successfully!"})
+    except Exception as e:
+        return jsonify({"message": f"Failed to send email: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True)
