@@ -14,8 +14,9 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 @app.route('/generate-topic', methods=['POST'])
 def generate_topic():
     data = request.get_json()
-    category = data.get("topic-prompt","Prompt for topic")
-    prompt = data.get("prompt", "Generate an impactful email topic about current frustrations with the US government around {category}.")
+    category = data.get("prompt", "general political issues")  # Fixed: Now correctly gets prompt input
+    prompt = f"Generate an impactful email topic about current frustrations with the US government around {category}."  # Fixed f-string formatting
+    
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": "You are a helpful assistant generating email topics."},
@@ -90,6 +91,10 @@ def send_email():
     
     from_email = os.getenv("EMAIL_ADDRESS")
     app_password = os.getenv("EMAIL_APP_PASSWORD")
+
+    # Safeguard for missing credentials
+    if not from_email or not app_password:
+        return jsonify({"message": "Email credentials not configured properly"}), 500
     
     msg = MIMEText(body)
     msg["Subject"] = subject
