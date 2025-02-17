@@ -73,73 +73,73 @@
     </div>
 
     <script>
-			document.getElementById("suggest-contact-button").addEventListener("click", function() {
-			const topic = document.getElementById("topic-display").value;
-			const content = document.getElementById("email-content").value;
+		document.getElementById("suggest-contact-button").addEventListener("click", function() {
+		const topic = document.getElementById("topic").value;
+		const content = document.getElementById("email-content").value;
 
-			fetch("/suggest-contact", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					topic: topic,
-					content: content
-				})
+		fetch("/suggest-contact", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				topic: topic,
+				content: content
 			})
-			.then(response => response.json())
-			.then(data => {
-				document.getElementById("recipient-email").value = data.email;  // Update recipient email input
-				document.getElementById("recipient-reason").innerText = data.reason;  // Display reason in text
-			})
-			.catch(error => console.error("Error:", error));
+		})
+		.then(response => response.json())
+		.then(data => {
+			document.getElementById("recipient-email").value = data.email;  // Update recipient email input
+			document.getElementById("recipient-reason").innerText = data.reason;  // Display reason in text
+		})
+		.catch(error => console.error("Error:", error));
+	});
+
+	$(document).ready(function() {
+		$('#generate-topic').click(function() {
+			const topicPrompt = $('#topic-prompt').val();
+			$.post('/generate-topic', JSON.stringify({ prompt: topicPrompt }), function(data) {
+				$('#topic').val(data.topic);
+			}, "json");
 		});
 
-		$(document).ready(function() {
-            $('#generate-topic').click(function() {
-                const topicPrompt = $('#topic-prompt').val();
-                $.post('/generate-topic', JSON.stringify({ prompt: topicPrompt }), function(data) {
-                    $('#topic').val(data.topic);
-                }, "json");
-            });
+		$('#generate-content').click(function() {
+			const topic = $('#topic').val();
+			$.post('/generate-email', {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ topic: topic })
+			}).then(response => response.json())
+			  .then(data => { $('#email-content').val(data.content); });
+		});
 
-            $('#generate-content').click(function() {
-                const topic = $('#topic').val();
-                $.post('/generate-email', JSON.stringify({ topic: topic }), function(data) {
-                    $('#email-content').val(data.content);
-                }, "json");
-            });
+		$('#refine-content').click(function() {
+			const topic = $('#topic').val();
+			const prompt = $('#prompt-input').val();
+			const content = $('#email-content').val();
+			
+			fetch('/generate-email', {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ topic: topic, prompt: prompt, content: content })
+			}).then(response => response.json())
+			  .then(data => { $('#email-content').val(data.content); });
+		});
 
-            $('#refine-content').click(function() {
-                const topic = $('#topic').val();
-                const prompt = $('#prompt-input').val();
-                const content = $('#email-content').val();
-                
-                $.post('/generate-email', JSON.stringify({ topic: topic, prompt: prompt, content: content }), function(data) {
-                    $('#email-content').val(data.content);
-                }, "json");
-            });
-
-            $('#suggest-contact').click(function() {
-                const topic = $('#topic').val();
-                const content = $('#email-content').val();
-                
-                $.post('/suggest-contact', JSON.stringify({ topic: topic, content: content }), function(data) {
-                    $('#recipient-email').val(data.contact);
-                }, "json");
-            });
-
-            $('#send-email').click(function() {
-                const to_email = $('#recipient-email').val();
-                if (!to_email) return alert("Please enter a recipient email");
-                const subject = $('#topic').val();
-                const body = $('#email-content').val();
-                
-                $.post('/send-email', JSON.stringify({ to_email: to_email, subject: subject, body: body }), function(data) {
-                    alert(data.message);
-                }, "json");
-            });
-        });
+		$('#send-email').click(function() {
+			const to_email = $('#recipient-email').val();
+			if (!to_email) return alert("Please enter a recipient email");
+			const subject = $('#topic').val();
+			const body = $('#email-content').val();
+			
+			fetch('/send-email', {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ to_email: to_email, subject: subject, body: body })
+			}).then(response => response.json())
+			  .then(data => { alert(data.message); });
+		});
+	});
     </script>
 </body>
 </html>
