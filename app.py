@@ -3,6 +3,7 @@ import openai
 import smtplib
 import os
 import json
+from dotenv import load_dotenv
 from email.mime.text import MIMEText
 
 load_dotenv()
