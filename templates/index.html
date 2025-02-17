@@ -73,73 +73,110 @@
     </div>
 
     <script>
-		document.getElementById("suggest-contact-button").addEventListener("click", function() {
-		const topic = document.getElementById("topic").value;
-		const content = document.getElementById("email-content").value;
+		Great! Now that the site renders, let’s debug why the buttons aren’t updating the form fields.
 
-		fetch("/suggest-contact", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify({
-				topic: topic,
-				content: content
-			})
-		})
-		.then(response => response.json())
-		.then(data => {
-			document.getElementById("recipient-email").value = data.email;  // Update recipient email input
-			document.getElementById("recipient-reason").innerText = data.reason;  // Display reason in text
-		})
-		.catch(error => console.error("Error:", error));
-	});
+🔍 Possible Causes & Fixes
+1️⃣ JavaScript Errors Prevent Execution
+If there’s a syntax error in JavaScript, it stops all scripts from running.
 
-	$(document).ready(function() {
-		$('#generate-topic').click(function() {
-			const topicPrompt = $('#topic-prompt').val();
-			$.post('/generate-topic', JSON.stringify({ prompt: topicPrompt }), function(data) {
-				$('#topic').val(data.topic);
-			}, "json");
-		});
+✅ Check the Browser Console for Errors:
 
-		$('#generate-content').click(function() {
-			const topic = $('#topic').val();
-			$.post('/generate-email', {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ topic: topic })
-			}).then(response => response.json())
-			  .then(data => { $('#email-content').val(data.content); });
-		});
+Right-click on the webpage → Click Inspect.
+Go to the Console tab.
+Look for red error messages.
+👉 If you see an error, let me know what it says!
 
-		$('#refine-content').click(function() {
-			const topic = $('#topic').val();
-			const prompt = $('#prompt-input').val();
-			const content = $('#email-content').val();
-			
-			fetch('/generate-email', {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ topic: topic, prompt: prompt, content: content })
-			}).then(response => response.json())
-			  .then(data => { $('#email-content').val(data.content); });
-		});
+2️⃣ JavaScript Is Not Properly Fetching the Backend
+Make sure your JavaScript sends the correct API requests and handles responses correctly.
 
-		$('#send-email').click(function() {
-			const to_email = $('#recipient-email').val();
-			if (!to_email) return alert("Please enter a recipient email");
-			const subject = $('#topic').val();
-			const body = $('#email-content').val();
-			
-			fetch('/send-email', {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ to_email: to_email, subject: subject, body: body })
-			}).then(response => response.json())
-			  .then(data => { alert(data.message); });
-		});
-	});
+✅ Fix: Update JavaScript Code in index.html Replace the existing <script> section with this fixed version:
+
+javascript
+Copy
+Edit
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("suggest-contact-button").addEventListener("click", function () {
+        const topic = document.getElementById("topic").value;
+        const content = document.getElementById("email-content").value;
+
+        fetch("/suggest-contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic: topic, content: content })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("recipient-email").value = data.email;
+            document.getElementById("recipient-reason").innerText = data.reason;
+        })
+        .catch(error => console.error("Error:", error));
+    });
+
+    document.getElementById("generate-topic").addEventListener("click", function () {
+        const topicPrompt = document.getElementById("topic-prompt").value;
+
+        fetch("/generate-topic", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: topicPrompt })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("topic").value = data.topic;
+        })
+        .catch(error => console.error("Error:", error));
+    });
+
+    document.getElementById("generate-content").addEventListener("click", function () {
+        const topic = document.getElementById("topic").value;
+
+        fetch("/generate-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic: topic })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("email-content").value = data.content;
+        })
+        .catch(error => console.error("Error:", error));
+    });
+
+    document.getElementById("refine-content").addEventListener("click", function () {
+        const topic = document.getElementById("topic").value;
+        const prompt = document.getElementById("prompt-input").value;
+        const content = document.getElementById("email-content").value;
+
+        fetch("/generate-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic: topic, prompt: prompt, content: content })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("email-content").value = data.content;
+        })
+        .catch(error => console.error("Error:", error));
+    });
+
+    document.getElementById("send-email").addEventListener("click", function () {
+        const to_email = document.getElementById("recipient-email").value;
+        if (!to_email) return alert("Please enter a recipient email");
+        const subject = document.getElementById("topic").value;
+        const body = document.getElementById("email-content").value;
+
+        fetch("/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ to_email: to_email, subject: subject, body: body })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+        })
+        .catch(error => console.error("Error:", error));
+    });
+});
     </script>
 </body>
 </html>
