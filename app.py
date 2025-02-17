@@ -5,10 +5,18 @@ import os
 import json
 from email.mime.text import MIMEText
 
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("Missing OpenAI API Key! Set OPENAI_API_KEY in environment variables.")
+
+openai_client = openai.Client(api_key=OPENAI_API_KEY)
+
 app = Flask(__name__)
 
 # OpenAI API Key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
 @app.route('/')
 def home():
     return render_template("index.html")
@@ -20,10 +28,9 @@ def generate_topic():
     category = data.get("prompt", "general political issues")  # Fixed: Now correctly gets prompt input
     prompt = f"Generate an impactful email topic about current frustrations with the US government around {category}."  # Fixed f-string formatting
     
-    response = openai.ChatCompletion.create(
+    response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": "You are a helpful assistant generating email topics."},
-                  {"role": "user", "content": prompt}]
+        messages=[{"role": "system", "content": prompt}]
     )
     topic = response["choices"][0]["message"]["content"]
     return jsonify({"topic": topic})
@@ -44,10 +51,9 @@ def generate_email():
     
     email_prompt += " Include the sender's details: Ryan Peterson, 44-year-old married father of two, living in Madison, WI, working as a healthcare analyst."
     
-    response = openai.ChatCompletion.create(
+    response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": "You are a helpful assistant generating email content."},
-                  {"role": "user", "content": email_prompt}]
+        messages=[{"role": "system", "content": email_prompt}]
     )
     content = response["choices"][0]["message"]["content"]
     return jsonify({"content": content})
@@ -61,10 +67,9 @@ def suggest_contact():
     
     contact_prompt = f"Based on the following email topic: '{topic}' and content: '{content}', suggest the most relevant recipient who would have the most impact. Provide the contact's email address and a brief reason why they are the best choice in the format: 'Email: example@email.com Reason: They are a key decision-maker in this field.'"
 
-    response = openai.ChatCompletion.create(
+    response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": "You are a helpful assistant suggesting impactful email recipients."},
-                  {"role": "user", "content": contact_prompt}]
+        messages=[{"role": "systme", "content": contact_prompt}]
     )
 
     # Extract response content
