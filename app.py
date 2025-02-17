@@ -9,7 +9,10 @@ app = Flask(__name__)
 
 # OpenAI API Key
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
+@app.route('/')
+def home():
+    return render_template("index.html")
+    
 # Function to generate a topic
 @app.route('/generate-topic', methods=['POST'])
 def generate_topic():
