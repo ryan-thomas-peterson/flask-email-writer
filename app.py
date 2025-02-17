@@ -105,4 +105,5 @@ def send_email():
         return jsonify({"message": f"Failed to send email: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.getenv("PORT", 5000))  # Get port from environment, default to 5000 if missing
+    app.run(host='0.0.0.0', port=port, debug=True)
